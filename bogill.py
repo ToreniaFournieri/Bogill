@@ -163,24 +163,13 @@ def equipment_selection_app(player):
         Equipment("臭い名刀コテツ", (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
         # ... Add more equipment items as needed ...
     ]
-
-
     # Store the player's base attributes in the session state if not already done
     if 'base_attributes' not in st.session_state:
         st.session_state.base_attributes = player.attributes
 
-    # Allow the player to select up to 4 equipment items
+    # Display the multiselect widget and limit to 4 selections
     equipment_names = [item.name for item in inventory]
-    selected_equipment_names = st.multiselect("Select up to 4 Equipment:", equipment_names)
-
-    # Check if the selected equipment has changed
-    if 'previous_selection' in st.session_state and st.session_state.previous_selection != selected_equipment_names:
-        st.session_state.previous_selection = selected_equipment_names
-        st.experimental_rerun()
-
-    # Set the initial previous selection if not set
-    if 'previous_selection' not in st.session_state:
-        st.session_state.previous_selection = selected_equipment_names
+    selected_equipment_names = st.multiselect(f"Select up to 4 Equipment:", equipment_names, max_selections=4)
 
     # Start with player's base attributes and apply the equipment attribute modifiers
     updated_attributes = list(st.session_state.base_attributes)
@@ -191,9 +180,11 @@ def equipment_selection_app(player):
     # Update player's attributes with the modified values
     player.attributes = tuple(updated_attributes)
 
-    # Display player's current attributes at the beginning
+    # Display player's current attributes after the selection
     st.subheader("Player's Current Attributes:")
     st.text(player.display_status())
+
+
 
 
 def main():
