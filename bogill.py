@@ -22,9 +22,10 @@ PROGRESS_FILE = "battle_progress.txt"
 
 class Player:
     """Defines a player with health and attributes."""
-    def __init__(self, health, attributes):
-        self.attributes = attributes
+    def __init__(self, health, attributes=(0,0,0,0,0,0), selected_equipment=None):
         self.health = health
+        self.attributes = attributes
+        self.selected_equipment = selected_equipment or []
 
     def display_status(self):
         return f"HP: {self.health}, \n性能: {self.attributes}"
@@ -91,30 +92,35 @@ def save_progress(player):
     """Save the player's progress to a file."""
     with open(PROGRESS_FILE, 'w') as file:
         file.write(str(player.health) + '\n')
-        file.write(','.join(map(str, player.attributes)))
+        file.write(','.join(map(str, player.attributes)) + '\n')
+        file.write('|'.join(player.selected_equipment))
 
 def load_progress():
-    """Load the player's progress from a file."""
+    """Load the player's progress and equipment from a file."""
     try:
         with open(PROGRESS_FILE, 'r') as file:
             health_line = file.readline().strip()
             attributes_line = file.readline().strip()
+            selected_equipment_line = file.readline().strip()
 
             # Check if the lines are not empty and can be processed
             if not health_line or not attributes_line:
-                return None
+                return None, []
 
             health = int(health_line)
             attributes = tuple(map(int, attributes_line.split(',')))
 
             # Check if the loaded attributes match the expected number of attributes
             if len(attributes) != NUM_ATTRIBUTES:
-                return None
+                return None, []
 
-            return Player(health, attributes)
+            selected_equipment_names = selected_equipment_line.split('|')
+            # After successfully loading the player data...
+            st.session_state.first_time = True
+            return Player(health, attributes, selected_equipment_names)
     except (FileNotFoundError, ValueError):
         # Handle file not found or value conversion errors
-        return None
+        return None, []
 
 # Sample code for Streamlit selectable list table
 def monster_selection_app():
@@ -171,7 +177,8 @@ def equipment_selection_app(player):
     st.title("Equipment Selection")
     # Save the player's current attributes before any equipment effects
     initial_attributes = player.attributes
-    
+
+
     option = st.radio("Choose an option", ["Option A", "Option B", "Option C"])
     user_input = st.text_input("Enter your name", "Type here...")
     number = st.number_input("Enter a number", min_value=0, max_value=100, step=1)
@@ -207,7 +214,15 @@ def equipment_selection_app(player):
 
     # Display the multiselect widget and limit to 4 selections
     equipment_names = [item.name for item in inventory]
-    selected_equipment_names = st.multiselect(f"Select up to 4 Equipment:", equipment_names, max_selections=4)
+    if st.session_state.get('first_time', True):
+        selected_equipment_names = st.multiselect(f"Select up to 4 Equipment:", equipment_names,default=player.selected_equipment, max_selections=4)
+        st.session_state.first_time = False
+    else:
+        selected_equipment_names = st.multiselect(f"Select up to 4 Equipment:", equipment_names, max_selections=4)
+
+
+    # Update the player's selected equipment
+    player.selected_equipment = selected_equipment_names
 
     # Start with player's base attributes and apply the equipment attribute modifiers
     updated_attributes = list(st.session_state.base_attributes)
@@ -227,10 +242,9 @@ def equipment_selection_app(player):
     if any(change != 0 for change in changes):
         st.toast(f"Attributes changed: {initial_attributes} -> {player.attributes}")
 
-
 def main():
     st.title("戦闘ブラウザゲーム")
-    
+    #st.session_state.player = Player(80, (0, 0, 0, 0, 0, 0))
     # Check if 'player' is already in the session state:
     if 'player' not in st.session_state:
         loaded_player = load_progress()
