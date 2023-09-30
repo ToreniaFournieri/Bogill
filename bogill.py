@@ -8,6 +8,8 @@
 
 import streamlit as st
 import random
+import pandas as pd
+import time
 
 # Constants
 NUM_ATTRIBUTES = 20
@@ -118,27 +120,47 @@ def load_progress():
 def monster_selection_app():
     st.title("Monster Selection")
 
-    # Sample monsters for demonstration
-    monsters = [
+    enemy_level = st.slider("Select Enemy Level:", 1, 100)
+
+    # Adjust monsters based on the selected enemy level
+    # (This is a basic scaling mechanism; you can adjust this based on your desired difficulty curve)
+    def adjust_monster_attributes(monster):
+        adjusted_strength = monster.strength + (enemy_level // 7)
+        adjusted_attribute_value = monster.attribute_value + (enemy_level // 5)
+        return Monster(adjusted_strength, monster.attribute_order, adjusted_attribute_value)
+
+
+    # Sample base monsters for demonstration
+    base_monsters = [
         Monster(5, 1, 3),
         Monster(4, 2, 2),
         Monster(3, 3, 4),
         Monster(6, 0, 1)
     ]
 
-    # Display a table of monsters
+    # Adjust monsters' attributes based on enemy level
+    adjusted_monsters = [adjust_monster_attributes(monster) for monster in base_monsters]
+
+    # Display a table of adjusted monsters
     st.subheader("Available Monsters:")
-    monster_data = [(monster.strength, monster.attribute_order, monster.attribute_value) for monster in monsters]
-    st.table(monster_data)
+    monster_data = {
+        'Monster Number': [f"Monster {i+1}" for i in range(len(adjusted_monsters))],
+        'Strength': [monster.strength for monster in adjusted_monsters],
+        'Attribute Order': [monster.attribute_order for monster in adjusted_monsters],
+        'Attribute Value': [monster.attribute_value for monster in adjusted_monsters]
+    }
+    df_monsters = pd.DataFrame(monster_data)
+    st.table(df_monsters)
 
     # Let user select a monster
-    monster_names = [f"Monster {i+1}" for i in range(len(monsters))]
+    monster_names = [f"Monster {i+1}" for i in range(len(adjusted_monsters))]
     selected_monster_name = st.selectbox("Select a Monster:", monster_names)
 
     # Take action based on the selected monster
-    selected_monster = monsters[monster_names.index(selected_monster_name)]
+    selected_monster = adjusted_monsters[monster_names.index(selected_monster_name)]
     st.subheader("Selected Monster's Status:")
     st.text(selected_monster.display_status())
+
 
 # This is just the function definition. You can call this function in the main() of the Streamlit app
 # or integrate it as part of your existing app.
@@ -147,7 +169,20 @@ def monster_selection_app():
 
 def equipment_selection_app(player):
     st.title("Equipment Selection")
-    
+    option = st.radio("Choose an option", ["Option A", "Option B", "Option C"])
+    user_input = st.text_input("Enter your name", "Type here...")
+    number = st.number_input("Enter a number", min_value=0, max_value=100, step=1)
+    #uploaded_file = st.file_uploader("Choose a file", type=["txt", "pdf"])
+    if st.checkbox("Show/Hide"):
+        st.text("Showing or hiding widget...")
+    with st.expander("ステータス詳細"):
+        st.text("各種詳細ステータスがこちらに\n 改行")
+        st.write("write を使った2行目の内容")
+        st.write("3行め")
+
+    if st.button("Show Notification"):
+        st.toast("This is a notification!")
+
     # Define an inventory of equipment items
     inventory = [
         Equipment("ショートソード", (1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
