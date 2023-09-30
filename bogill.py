@@ -12,7 +12,7 @@ import pandas as pd
 import time
 
 # Constants
-NUM_ATTRIBUTES = 20
+NUM_ATTRIBUTES = 6
 MAX_ATTRIBUTE_VALUE = 5  # The maximum value an attribute can have
 MAX_MONSTER_STRENGTH = 9
 
@@ -169,6 +169,9 @@ def monster_selection_app():
 
 def equipment_selection_app(player):
     st.title("Equipment Selection")
+    # Save the player's current attributes before any equipment effects
+    initial_attributes = player.attributes
+    
     option = st.radio("Choose an option", ["Option A", "Option B", "Option C"])
     user_input = st.text_input("Enter your name", "Type here...")
     number = st.number_input("Enter a number", min_value=0, max_value=100, step=1)
@@ -185,17 +188,17 @@ def equipment_selection_app(player):
 
     # Define an inventory of equipment items
     inventory = [
-        Equipment("ショートソード", (1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
-        Equipment("臭いショートシールド", (0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
-        Equipment("臭いアーマー", (1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
-        Equipment("臭いナイトシールド", (0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
-        Equipment("臭いガンレット", (0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
-        Equipment("臭いガンレット", (0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
-        Equipment("臭いガンレット", (0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
-        Equipment("臭い日本刀", (1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
-        Equipment("臭い木刀", (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
-        Equipment("臭い長刀物干竿", (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
-        Equipment("臭い名刀コテツ", (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+        Equipment("ショートソード", (1, 0, 0, 0, 0, 0)),
+        Equipment("臭いショートシールド", (0, 0, 1, 1, 0, 0)),
+        Equipment("臭いアーマー", (1, 0, 1, 1, 0, 0)),
+        Equipment("臭いナイトシールド", (0, 0, 1, 1, 1, 0)),
+        Equipment("臭いガンレット", (0, 0, 1, 0, 0, 0)),
+        Equipment("臭いガンレット", (0, 0, 1, 0, 0, 0)),
+        Equipment("臭いガンレット", (0, 0, 1, 0, 0, 0)),
+        Equipment("臭い日本刀", (1, 0, 0, 0, 0, 0)),
+        Equipment("臭い木刀", (0, 0, 0, 0, 0, 0)),
+        Equipment("臭い長刀物干竿", (2, 0, 0, 0, 0, 0)),
+        Equipment("臭い名刀コテツ", (2, 0, 0, 0, 0, 0)),
         # ... Add more equipment items as needed ...
     ]
     # Store the player's base attributes in the session state if not already done
@@ -219,7 +222,10 @@ def equipment_selection_app(player):
     st.subheader("Player's Current Attributes:")
     st.text(player.display_status())
 
-
+    # After applying the equipment effects, compare the new attributes
+    changes = [(new - old) for old, new in zip(initial_attributes, player.attributes)]
+    if any(change != 0 for change in changes):
+        st.toast(f"Attributes changed: {initial_attributes} -> {player.attributes}")
 
 
 def main():
@@ -231,7 +237,7 @@ def main():
         if loaded_player:
             st.session_state.player = loaded_player
         else:
-            st.session_state.player = Player(80, (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+            st.session_state.player = Player(80, (0, 0, 0, 0, 0, 0))
 
     player = st.session_state.player
 
@@ -261,7 +267,7 @@ def main():
         st.subheader("Player has been defeated!")
         if st.button("Restart Game"):
             # Reset the player's status
-            st.session_state.player = Player(80, (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+            st.session_state.player = Player(80, (0, 0, 0, 0, 0, 0))
             save_progress(st.session_state.player)
 
 if __name__ == "__main__":
