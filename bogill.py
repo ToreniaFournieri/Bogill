@@ -42,19 +42,26 @@ def create_monster():
 
 
 def battle(player, monster):
-    """Simulates a battle between the player and the monster."""
+    """Simulates a battle between the player and the monster with variability in damage for each multiplier."""
     player_attribute_value = player.attributes[monster.attribute_order]
-    damage = (monster.attribute_value - player_attribute_value) * monster.strength
+    damage_multiplier = (monster.attribute_value - player_attribute_value)
+    
+    total_damage = 0
+    # Looping for each damage multiplier and calculating random damage
+    for _ in range(abs(damage_multiplier)):
+        damage = random.randint(1, monster.strength)
+        total_damage += damage
 
-    if damage > 0:
-        player.take_damage(damage)
+    if total_damage > 0:
+        player.take_damage(total_damage)
 
     return 'Player wins!' if player.is_alive() else 'Player loses!'
 
 
+
 # Testing the game
-player = Player(20, (1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
-monster = Monster(2,1,3)
+player = Player(20, (1, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+monster = Monster(5,1,10)
 result = battle(player, monster)
 
-print(f"{player.display_status()}, {monster.display_status()}, {result}")
+print(f"{player.display_status()} ,\n{monster.display_status()},\n{result}")
