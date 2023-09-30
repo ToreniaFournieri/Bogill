@@ -147,38 +147,53 @@ def monster_selection_app():
 
 def equipment_selection_app(player):
     st.title("Equipment Selection")
-
+    
     # Define an inventory of equipment items
     inventory = [
-        Equipment("Sword", (2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
-        Equipment("Shield", (0, 0, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
-        Equipment("Helmet", (1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+        Equipment("ショートソード", (1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+        Equipment("臭いショートシールド", (0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+        Equipment("臭いアーマー", (1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+        Equipment("臭いナイトシールド", (0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+        Equipment("臭いガンレット", (0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+        Equipment("臭いガンレット", (0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+        Equipment("臭いガンレット", (0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+        Equipment("臭い日本刀", (1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+        Equipment("臭い木刀", (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+        Equipment("臭い長刀物干竿", (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+        Equipment("臭い名刀コテツ", (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
         # ... Add more equipment items as needed ...
     ]
 
-    # Display available equipment in the inventory
-    st.subheader("Available Equipment:")
-    for item in inventory:
-        st.text(item.display())
+
+    # Store the player's base attributes in the session state if not already done
+    if 'base_attributes' not in st.session_state:
+        st.session_state.base_attributes = player.attributes
 
     # Allow the player to select up to 4 equipment items
     equipment_names = [item.name for item in inventory]
     selected_equipment_names = st.multiselect("Select up to 4 Equipment:", equipment_names)
 
-    # Apply the equipment attribute modifiers to the player's attributes
-    base_attributes = player.attributes
+    # Check if the selected equipment has changed
+    if 'previous_selection' in st.session_state and st.session_state.previous_selection != selected_equipment_names:
+        st.session_state.previous_selection = selected_equipment_names
+        st.experimental_rerun()
+
+    # Set the initial previous selection if not set
+    if 'previous_selection' not in st.session_state:
+        st.session_state.previous_selection = selected_equipment_names
+
+    # Start with player's base attributes and apply the equipment attribute modifiers
+    updated_attributes = list(st.session_state.base_attributes)
     for name in selected_equipment_names:
         equipment = next(item for item in inventory if item.name == name)
-        base_attributes = tuple(base + modifier for base, modifier in zip(base_attributes, equipment.attribute_modifiers))
+        updated_attributes = [base + modifier for base, modifier in zip(updated_attributes, equipment.attribute_modifiers)]
 
     # Update player's attributes with the modified values
-    player.attributes = base_attributes
+    player.attributes = tuple(updated_attributes)
 
-    st.subheader("Player's Updated Attributes:")
+    # Display player's current attributes at the beginning
+    st.subheader("Player's Current Attributes:")
     st.text(player.display_status())
-
-# You can call this function in the main() of the Streamlit app or integrate it as part of your existing app.
-# Note: Ensure the player is initialized before calling this function.
 
 
 def main():
@@ -190,16 +205,15 @@ def main():
         if loaded_player:
             st.session_state.player = loaded_player
         else:
-            st.session_state.player = Player(80, (1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+            st.session_state.player = Player(80, (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
 
     player = st.session_state.player
 
     st.subheader("主人公 ステータス:")
-    st.text(player.display_status())
+    equipment_selection_app(player)
 
     if player.is_alive():
         monster_selection_app()
-        equipment_selection_app(player)
         
         if st.button("敵と戦う"):
             # Create a monster
@@ -221,7 +235,7 @@ def main():
         st.subheader("Player has been defeated!")
         if st.button("Restart Game"):
             # Reset the player's status
-            st.session_state.player = Player(80, (1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+            st.session_state.player = Player(80, (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
             save_progress(st.session_state.player)
 
 if __name__ == "__main__":
