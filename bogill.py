@@ -1,3 +1,11 @@
+
+###To intall stereamlit:
+#pip install streamlit
+#
+###To Play game:
+#streamlit run bogill.py
+#
+
 import streamlit as st
 import random
 
@@ -25,6 +33,21 @@ class Player:
     def is_alive(self):
         return self.health > 0
      
+# Equipment class definition
+class Equipment:
+    def __init__(self, name, attribute_modifiers):
+        """Creates an equipment item.
+        
+        Args:
+        - name (str): The name of the equipment.
+        - attribute_modifiers (tuple): Modifiers that are added to the player's attributes.
+        """
+        self.name = name
+        self.attribute_modifiers = attribute_modifiers
+
+    def display(self):
+        return f"{self.name} ({self.attribute_modifiers})"
+
 
 
 class Monster:
@@ -91,6 +114,73 @@ def load_progress():
         # Handle file not found or value conversion errors
         return None
 
+# Sample code for Streamlit selectable list table
+def monster_selection_app():
+    st.title("Monster Selection")
+
+    # Sample monsters for demonstration
+    monsters = [
+        Monster(5, 1, 3),
+        Monster(4, 2, 2),
+        Monster(3, 3, 4),
+        Monster(6, 0, 1)
+    ]
+
+    # Display a table of monsters
+    st.subheader("Available Monsters:")
+    monster_data = [(monster.strength, monster.attribute_order, monster.attribute_value) for monster in monsters]
+    st.table(monster_data)
+
+    # Let user select a monster
+    monster_names = [f"Monster {i+1}" for i in range(len(monsters))]
+    selected_monster_name = st.selectbox("Select a Monster:", monster_names)
+
+    # Take action based on the selected monster
+    selected_monster = monsters[monster_names.index(selected_monster_name)]
+    st.subheader("Selected Monster's Status:")
+    st.text(selected_monster.display_status())
+
+# This is just the function definition. You can call this function in the main() of the Streamlit app
+# or integrate it as part of your existing app.
+
+# Sample code to demonstrate st.multiselect with the monster game
+
+def equipment_selection_app(player):
+    st.title("Equipment Selection")
+
+    # Define an inventory of equipment items
+    inventory = [
+        Equipment("Sword", (2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+        Equipment("Shield", (0, 0, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+        Equipment("Helmet", (1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+        # ... Add more equipment items as needed ...
+    ]
+
+    # Display available equipment in the inventory
+    st.subheader("Available Equipment:")
+    for item in inventory:
+        st.text(item.display())
+
+    # Allow the player to select up to 4 equipment items
+    equipment_names = [item.name for item in inventory]
+    selected_equipment_names = st.multiselect("Select up to 4 Equipment:", equipment_names)
+
+    # Apply the equipment attribute modifiers to the player's attributes
+    base_attributes = player.attributes
+    for name in selected_equipment_names:
+        equipment = next(item for item in inventory if item.name == name)
+        base_attributes = tuple(base + modifier for base, modifier in zip(base_attributes, equipment.attribute_modifiers))
+
+    # Update player's attributes with the modified values
+    player.attributes = base_attributes
+
+    st.subheader("Player's Updated Attributes:")
+    st.text(player.display_status())
+
+# You can call this function in the main() of the Streamlit app or integrate it as part of your existing app.
+# Note: Ensure the player is initialized before calling this function.
+
+
 def main():
     st.title("戦闘ブラウザゲーム")
     
@@ -108,6 +198,9 @@ def main():
     st.text(player.display_status())
 
     if player.is_alive():
+        monster_selection_app()
+        equipment_selection_app(player)
+        
         if st.button("敵と戦う"):
             # Create a monster
             #monster = Monster(5,1,10)
