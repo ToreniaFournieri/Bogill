@@ -115,6 +115,8 @@ def load_progress():
                 return None, []
 
             selected_equipment_names = selected_equipment_line.split('|')
+            if selected_equipment_names == [""]:
+                selected_equipment_names = None
             # After successfully loading the player data...
             st.session_state.first_time = True
             return Player(health, attributes, selected_equipment_names)
@@ -171,7 +173,7 @@ def monster_selection_app():
 # This is just the function definition. You can call this function in the main() of the Streamlit app
 # or integrate it as part of your existing app.
 
-# Sample code to demonstrate st.multiselect with the monster game
+
 
 def equipment_selection_app(player):
     st.title("Equipment Selection")
@@ -211,21 +213,31 @@ def equipment_selection_app(player):
     # Store the player's base attributes in the session state if not already done
     if 'base_attributes' not in st.session_state:
         st.session_state.base_attributes = player.attributes
-
+        
     # Display the multiselect widget and limit to 4 selections
     equipment_names = [item.name for item in inventory]
-    if st.session_state.get('first_time', True):
-        selected_equipment_names = st.multiselect(f"Select up to 4 Equipment:", equipment_names,default=player.selected_equipment, max_selections=4)
-        st.session_state.first_time = False
-    else:
-        selected_equipment_names = st.multiselect(f"Select up to 4 Equipment:", equipment_names, max_selections=4)
 
+    #if st.session_state.first_time:
+        
 
-    # Update the player's selected equipment
-    player.selected_equipment = selected_equipment_names
+    def on_equipment_change():
+        st.toast("Equipment selection has changed!")
+
+        if st.session_state.equipment_selector:
+            player.selected_equipment = st.session_state.equipment_selector
+    
+    selected_equipment_names = st.multiselect(
+        f"Select up to 4 Equipment:",
+        equipment_names,
+        default=player.selected_equipment,
+        on_change=on_equipment_change,
+        key="equipment_selector",
+        max_selections=4
+    )
+
 
     # Start with player's base attributes and apply the equipment attribute modifiers
-    updated_attributes = list(st.session_state.base_attributes)
+    updated_attributes = list(player.attributes)
     for name in selected_equipment_names:
         equipment = next(item for item in inventory if item.name == name)
         updated_attributes = [base + modifier for base, modifier in zip(updated_attributes, equipment.attribute_modifiers)]
@@ -239,7 +251,10 @@ def equipment_selection_app(player):
 
     # After applying the equipment effects, compare the new attributes
     changes = [(new - old) for old, new in zip(initial_attributes, player.attributes)]
+  
     if any(change != 0 for change in changes):
+        # Update the player's selected equipment
+        
         st.toast(f"Attributes changed: {initial_attributes} -> {player.attributes}")
 
 def main():
