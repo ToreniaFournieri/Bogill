@@ -16,26 +16,44 @@ NUM_ATTRIBUTES = 6
 MAX_ATTRIBUTE_VALUE = 5  # The maximum value an attribute can have
 MAX_MONSTER_STRENGTH = 9
 
+
+
 # Define a path for the progress file
 PROGRESS_FILE = "battle_progress.txt"
 
 
 class Player:
     """Defines a player with health and attributes."""
-    def __init__(self, health, attributes=(0,0,0,0,0,0), selected_equipment=None):
+    def __init__(self, health, attributes=(0,0,0,0,0,0), selected_equipment=None, inventory=None):
         self.health = health
+        self.default_attributes = attributes
         self.attributes = attributes
         self.selected_equipment = selected_equipment or []
+        self.inventory = inventory
 
     def display_status(self):
-        return f"HP: {self.health}, \n性能: {self.attributes}"
+        return f"HP: {self.health}, \n性能: {self.attributes} \n{self.selected_equipment}"
 
     def take_damage(self, damage):
         self.health -= damage
 
     def is_alive(self):
         return self.health > 0
-     
+
+    def update_attributes(self):
+        """Updates player attributes based on selected equipment."""
+        # Start with default attributes
+        updated_attributes = list(self.default_attributes)
+
+        # Apply the equipment attribute modifiers
+        for name in self.selected_equipment:
+            equipment = next(item for item in self.inventory if item.name == name)
+            updated_attributes = [base + modifier for base, modifier in zip(updated_attributes, equipment.attribute_modifiers)]
+                    # Debugging: Print equipment found and its modifiers
+        
+        # Update the player's attributes
+        self.attributes = tuple(updated_attributes)
+
 # Equipment class definition
 class Equipment:
     def __init__(self, name, attribute_modifiers):
@@ -51,7 +69,21 @@ class Equipment:
     def display(self):
         return f"{self.name} ({self.attribute_modifiers})"
 
-
+# Define an inventory of equipment items
+INVENTORY = [
+    Equipment("ショートソード", (1, 0, 0, 0, 0, 0)),
+    Equipment("臭いショートシールド", (0, 0, 1, 1, 0, 0)),
+    Equipment("臭いアーマー", (1, 0, 1, 1, 0, 0)),
+    Equipment("臭いナイトシールド", (0, 0, 1, 1, 1, 0)),
+    Equipment("臭いガンレット", (0, 0, 1, 0, 0, 0)),
+    Equipment("臭いガンレット", (0, 0, 1, 0, 0, 0)),
+    Equipment("臭いガンレット", (0, 0, 1, 0, 0, 0)),
+    Equipment("臭い日本刀", (1, 0, 0, 0, 0, 0)),
+    Equipment("臭い木刀", (0, 0, 0, 0, 0, 0)),
+    Equipment("臭い長刀物干竿", (2, 0, 0, 0, 0, 0)),
+    Equipment("臭い名刀コテツ", (2, 0, 0, 0, 0, 0)),
+    # ... Add more equipment items as needed ...
+]
 
 class Monster:
     """Defines a monster with strength, attribute order, and attribute value."""
@@ -92,7 +124,7 @@ def save_progress(player):
     """Save the player's progress to a file."""
     with open(PROGRESS_FILE, 'w') as file:
         file.write(str(player.health) + '\n')
-        file.write(','.join(map(str, player.attributes)) + '\n')
+        file.write(','.join(map(str, player.default_attributes)) + '\n')
         file.write('|'.join(player.selected_equipment))
 
 def load_progress():
@@ -119,7 +151,7 @@ def load_progress():
                 selected_equipment_names = None
             # After successfully loading the player data...
             st.session_state.first_time = True
-            return Player(health, attributes, selected_equipment_names)
+            return Player(health, attributes, selected_equipment_names, INVENTORY)
     except (FileNotFoundError, ValueError):
         # Handle file not found or value conversion errors
         return None, []
@@ -195,27 +227,13 @@ def equipment_selection_app(player):
     if st.button("Show Notification"):
         st.toast("This is a notification!")
 
-    # Define an inventory of equipment items
-    inventory = [
-        Equipment("ショートソード", (1, 0, 0, 0, 0, 0)),
-        Equipment("臭いショートシールド", (0, 0, 1, 1, 0, 0)),
-        Equipment("臭いアーマー", (1, 0, 1, 1, 0, 0)),
-        Equipment("臭いナイトシールド", (0, 0, 1, 1, 1, 0)),
-        Equipment("臭いガンレット", (0, 0, 1, 0, 0, 0)),
-        Equipment("臭いガンレット", (0, 0, 1, 0, 0, 0)),
-        Equipment("臭いガンレット", (0, 0, 1, 0, 0, 0)),
-        Equipment("臭い日本刀", (1, 0, 0, 0, 0, 0)),
-        Equipment("臭い木刀", (0, 0, 0, 0, 0, 0)),
-        Equipment("臭い長刀物干竿", (2, 0, 0, 0, 0, 0)),
-        Equipment("臭い名刀コテツ", (2, 0, 0, 0, 0, 0)),
-        # ... Add more equipment items as needed ...
-    ]
+
     # Store the player's base attributes in the session state if not already done
     if 'base_attributes' not in st.session_state:
         st.session_state.base_attributes = player.attributes
         
     # Display the multiselect widget and limit to 4 selections
-    equipment_names = [item.name for item in inventory]
+    equipment_names = [item.name for item in player.inventory]
 
     #if st.session_state.first_time:
         
@@ -225,6 +243,12 @@ def equipment_selection_app(player):
 
         if st.session_state.equipment_selector:
             player.selected_equipment = st.session_state.equipment_selector
+            player.update_attributes()
+        else:
+            # when deselect all of them
+            player.selected_equipment = []
+            player.update_attributes()
+
     
     selected_equipment_names = st.multiselect(
         f"Select up to 4 Equipment:",
@@ -234,16 +258,6 @@ def equipment_selection_app(player):
         key="equipment_selector",
         max_selections=4
     )
-
-
-    # Start with player's base attributes and apply the equipment attribute modifiers
-    updated_attributes = list(player.attributes)
-    for name in selected_equipment_names:
-        equipment = next(item for item in inventory if item.name == name)
-        updated_attributes = [base + modifier for base, modifier in zip(updated_attributes, equipment.attribute_modifiers)]
-
-    # Update player's attributes with the modified values
-    player.attributes = tuple(updated_attributes)
 
     # Display player's current attributes after the selection
     st.subheader("Player's Current Attributes:")
@@ -266,9 +280,10 @@ def main():
         if loaded_player:
             st.session_state.player = loaded_player
         else:
-            st.session_state.player = Player(80, (0, 0, 0, 0, 0, 0))
+            st.session_state.player = Player(80, (0, 0, 0, 0, 0, 0), INVENTORY)
 
     player = st.session_state.player
+    player.update_attributes()
 
     st.subheader("主人公 ステータス:")
     equipment_selection_app(player)
@@ -296,7 +311,7 @@ def main():
         st.subheader("Player has been defeated!")
         if st.button("Restart Game"):
             # Reset the player's status
-            st.session_state.player = Player(80, (0, 0, 0, 0, 0, 0))
+            st.session_state.player = Player(80, (0, 0, 0, 0, 0, 0),INVENTORY)
             save_progress(st.session_state.player)
 
 if __name__ == "__main__":
